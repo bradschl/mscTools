@@ -66,8 +66,15 @@ void RAQ_deinit(RAQHandle* handle)
     if(NULL != handle)
     {
         g_rand_free(handle->_rand);
-        // TODO: Free all the elements
+        handle->_rand = NULL;
+
+        while(TRUE != g_queue_is_empty(handle->_accessQueue))
+        {
+            free(g_queue_pop_head(handle->_accessQueue));
+        }
+
         g_queue_free(handle->_accessQueue);
+        handle->_accessQueue = NULL;
     }
 }
 
@@ -79,7 +86,7 @@ bool RAQ_isEmpty(RAQHandle* handle)
     }
     else
     {
-        return g_queue_is_empty(handle->_accessQueue);
+        return TRUE == g_queue_is_empty(handle->_accessQueue);
     }
 }
 

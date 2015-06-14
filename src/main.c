@@ -4,6 +4,7 @@
 
 #include <Entropy.h>
 #include <IoBlock.h>
+#include <RAQ.h>
 
 typedef enum
 {
@@ -84,38 +85,34 @@ static int randBlockCopy(const char* inputFile, const char* outputFile)
     int ret = 0;
     do
     {
-        EntropyHandle entropy;    
-        if(!Entropy_init(&entropy))
-        {
-            fprintf(stderr, "Could not initialize entropy driver.\n");
-            ret = -1;
-            break;
-        }
-
         IoBlockHandle input;
         if(IO_SUCCESS != IoBlock_open(&input, inputFile, false, true))
         {
             fprintf(stderr, "Could not open '%s' for reading.\n", inputFile);
             ret = -1;
-            break;   
+            break;
         }
 
         IoBlockHandle output;
-        if(IO_SUCCESS != IoBlock_open(&input, inputFile, false, false))
+        if(IO_SUCCESS != IoBlock_open(&output, outputFile, false, false))
         {
-            fprintf(stderr, "Could not open '%s' for reading.\n", inputFile);
+            fprintf(stderr, "Could not open '%s' for writing.\n", outputFile);
             ret = -1;
-            break;   
+            break;
         }
 
+        RAQHandle raqHandle = RAQ_init(4096, 16, 256);
 
+        while(!RAQ_isEmpty(&raqHandle))
+        {
+            RAQBlock block = RAQ_popRandom(&raqHandle);
 
+            printf("%d,%d\n", (int)block.address, (int)block.length);
+        }
 
-
-
+        RAQ_deinit(&raqHandle);
         IoBlock_close(&output);
         IoBlock_close(&input);
-        Entropy_deinit(&entropy);
     } while(0);
 
     return ret;
