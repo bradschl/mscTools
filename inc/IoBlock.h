@@ -25,43 +25,32 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <Entropy.h>
+#ifndef IO_BLOCK_H_
+#define IO_BLOCK_H_
 
-bool Entropy_init(EntropyHandle* handle)
+#include <stdio.h>
+#include <stdbool.h>
+
+typedef enum
 {
-    if(handle == NULL)
-    {
-        return false;
-    }
+    IO_SUCCESS,
+    IO_ERROR
+} IoBlockReturn;
 
-    handle->_inputHandle = fopen("/dev/urandom", "rb");
-
-    if(handle->_inputHandle == NULL)
-    {
-        return false;
-    }
-    
-    setbuf(handle->_inputHandle, NULL);
-
-
-    return true;
-}
-
-
-void Entropy_deinit(EntropyHandle* handle)
+typedef struct
 {
-    fclose(handle->_inputHandle);
-    handle->_inputHandle = NULL;
-}
+    bool            _isReadOnly;
+    FILE*           _file;
+    IoBlockReturn   _errorState;
+} IoBlockHandle;
 
 
-void Entropy_get(EntropyHandle* handle, void* buffer, size_t length)
-{
-    if((handle == NULL) || (handle->_inputHandle == NULL))
-    {
-        return;
-    }
+IoBlockReturn IoBlock_open  (IoBlockHandle* handle, const char* filename, bool cacheable, bool readOnly);
+void          IoBlock_close (IoBlockHandle* handle);
 
-    fread(buffer, 1, length, handle->_inputHandle);
-}
+IoBlockReturn IoBlock_read  (IoBlockHandle* handle, size_t address, void* buffer, size_t length);
+IoBlockReturn IoBlock_write (IoBlockHandle* handle, size_t address, const void* buffer, size_t length);
 
+size_t        IoBlock_size  (IoBlockHandle* handle);
+
+#endif /* IO_BLOCK_H_ */
