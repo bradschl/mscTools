@@ -13,7 +13,7 @@ CSOURCES 		:= $(shell find ./src/ -name '*.c')
 COBJS 			:= $(addprefix $(OBJ_DIR)/,$(CSOURCES:%.c=%.o))
 
 # Compiler flags
-CF_ALL 			:= -Iinc $(shell pkg-config --cflags glib-2.0)
+CF_ALL 			:= -Wall -Iinc $(shell pkg-config --cflags glib-2.0)
 LF_ALL 			:= 
 LL_ALL			:= $(shell pkg-config --libs glib-2.0)
 
