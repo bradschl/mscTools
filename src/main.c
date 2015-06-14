@@ -1,16 +1,51 @@
+#include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
-#include "Entropy.h"
+#include <Entropy.h>
+#include <IoBlock.h>
 
 typedef enum
 {
     UNKNOWN,
-    RAND_READ,
-    RAND_WRITE
+    RAND_BLOCK_COPY
 } Command;
 
+/*
+typedef struct
+{
+    int     argc;
+    char**  argv;
 
-static int randomRead(const char* inputFile, const char* outputFile);
+    bool    isFinsihed;
+    int     retCode;
+} ArgsState;
+
+static inline ArgsState Args_init(int argc, char** argv)
+{
+    ArgsState state;
+
+    state.argc          = argc;
+    state.argv          = argv;
+    state.isFinsihed    = false;
+    state.retCode       = false;
+
+    return state;
+}
+
+static inline bool  Args_isFinsihed(ArgsState* args)
+{
+    return args->isFinsihed;
+}
+
+static inline int   Args_getReturnCode(ArgsState* args)
+{
+    return args->retCode;
+}
+*/
+
+
+static int randBlockCopy(const char* inputFile, const char* outputFile);
 
 
 int main(int argc, char** argv)
@@ -25,26 +60,16 @@ int main(int argc, char** argv)
     }
 
     Command cmd = UNKNOWN;
-    if(strcmp("rread", *argv) == 0)
+    if(strcmp("rbc", *argv) == 0)
     {
-        cmd = RAND_READ;
-    }
-    else if(strcmp("rwrite", *argv) == 0)
-    {
-        cmd = RAND_WRITE;
+        cmd = RAND_BLOCK_COPY;
     }
     argc--;
-    argv++;    
+    argv++;
 
-    if((cmd == RAND_READ) && (argc == 2))
+    if((cmd == RAND_BLOCK_COPY) && (argc == 2))
     {
-        return randomRead(argv[0], argv[1]);
-    }
-    else if((cmd == RAND_WRITE) && (argc == 2))
-    {
-        // TODO: Stub
-        printf("Not implemented\n");
-        return 0;
+        return randBlockCopy(argv[0], argv[1]);
     }
     else
     {
@@ -54,27 +79,45 @@ int main(int argc, char** argv)
 }
 
 
-static int randomRead(const char* inputFile, const char* outputFile)
+static int randBlockCopy(const char* inputFile, const char* outputFile)
 {
-    EntropyHandle entropy;
-
-    if(!Entropy_init(&entropy))
+    int ret = 0;
+    do
     {
-        fprintf(stderr, "Could not initialize entropy driver.\n");
-        return -1;
-    }
+        EntropyHandle entropy;    
+        if(!Entropy_init(&entropy))
+        {
+            fprintf(stderr, "Could not initialize entropy driver.\n");
+            ret = -1;
+            break;
+        }
+
+        IoBlockHandle input;
+        if(IO_SUCCESS != IoBlock_open(&input, inputFile, false, true))
+        {
+            fprintf(stderr, "Could not open '%s' for reading.\n", inputFile);
+            ret = -1;
+            break;   
+        }
+
+        IoBlockHandle output;
+        if(IO_SUCCESS != IoBlock_open(&input, inputFile, false, false))
+        {
+            fprintf(stderr, "Could not open '%s' for reading.\n", inputFile);
+            ret = -1;
+            break;   
+        }
 
 
-    unsigned int randData[10];
-    Entropy_get(&entropy, randData, sizeof(randData));
 
-    unsigned int i;
-    for(i = 0; i < (sizeof(randData)/sizeof(*randData)); ++i)
-    {
-        printf("0x%08X\n", randData[i]);
-    }
 
-    Entropy_deinit(&entropy);
-    return 0;
+
+
+        IoBlock_close(&output);
+        IoBlock_close(&input);
+        Entropy_deinit(&entropy);
+    } while(0);
+
+    return ret;
 }
 

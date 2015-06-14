@@ -94,7 +94,7 @@ IoBlockReturn IoBlock_read(IoBlockHandle* handle, size_t address, void* buffer, 
         if(length != fread(buffer, 1, length, handle->_file))
             break;
 
-        ret == IO_SUCCESS;
+        ret = IO_SUCCESS;
     } while(0);
 
     return ret;
@@ -120,7 +120,7 @@ IoBlockReturn IoBlock_write(IoBlockHandle* handle, size_t address, const void* b
         if(length != fwrite(buffer, 1, length, handle->_file))
             break;
 
-        ret == IO_SUCCESS;
+        ret = IO_SUCCESS;
     } while(0);
 
     return ret;

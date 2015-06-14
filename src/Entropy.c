@@ -27,6 +27,9 @@
 
 #include <Entropy.h>
 
+// TODO: Convert to GLib
+// https://developer.gnome.org/glib/stable/glib-Random-Numbers.html
+
 bool Entropy_init(EntropyHandle* handle)
 {
     if(handle == NULL)
