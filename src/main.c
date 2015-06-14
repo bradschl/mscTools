@@ -82,6 +82,10 @@ int main(int argc, char** argv)
 
 static int randBlockCopy(const char* inputFile, const char* outputFile)
 {
+    // TODO: Make these arguments
+    static const uint16_t MAX_BLOCK_SIZE    = 4096;
+    static const uint16_t MIN_BLOCK_SIZE    = 64;
+
     int ret = 0;
     do
     {
@@ -101,13 +105,18 @@ static int randBlockCopy(const char* inputFile, const char* outputFile)
             break;
         }
 
-        RAQHandle raqHandle = RAQ_init(4096, 16, 256);
+        RAQHandle raqHandle = RAQ_init(IoBlock_size(&input), MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
 
         while(!RAQ_isEmpty(&raqHandle))
         {
             RAQBlock block = RAQ_popRandom(&raqHandle);
 
-            printf("%d,%d\n", (int)block.address, (int)block.length);
+            printf("Reading %d bytes from address %d...\n", (int)block.length, (int)block.address);
+
+            uint8_t buffer[block.length];
+            // TODO: Check return codes
+            IoBlock_read(&input, block.address, buffer, block.length);
+            IoBlock_write(&output, block.address, buffer, block.length);
         }
 
         RAQ_deinit(&raqHandle);
