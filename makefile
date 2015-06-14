@@ -12,13 +12,18 @@ TARGET_BIN 		:= $(BIN_DIR)/mscTester
 CSOURCES 		:= $(shell find ./src/ -name '*.c')
 COBJS 			:= $(addprefix $(OBJ_DIR)/,$(CSOURCES:%.c=%.o))
 
+# Compiler flags
+CF_ALL 			:= -Iinc $(shell pkg-config --cflags glib-2.0)
+LF_ALL 			:= 
+LL_ALL			:= $(shell pkg-config --libs glib-2.0)
+
 $(TARGET_BIN): $(COBJS)
 	$(MAKEDIR)
-	$(CC) $^ -o $@
+	$(CC) $(LF_ALL) $^ $(LL_ALL) -o $@
 
 $(OBJ_DIR)/%.o: %.c
 	@$(MAKEDIR)
-	$(CC) -Iinc -c $< -o $@
+	$(CC) $(CF_ALL) -c $< -o $@
 
 
 .PHONY: clean
