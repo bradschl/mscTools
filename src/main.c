@@ -44,7 +44,9 @@ static inline int   Args_getReturnCode(ArgsState* args)
     return args->retCode;
 }
 */
-
+// TODO: Make these arguments
+static const uint16_t MAX_BLOCK_SIZE    = 4096;
+static const uint16_t MIN_BLOCK_SIZE    = 64;
 
 static int randBlockCopy(const char* inputFile, const char* outputFile);
 
@@ -82,10 +84,6 @@ int main(int argc, char** argv)
 
 static int randBlockCopy(const char* inputFile, const char* outputFile)
 {
-    // TODO: Make these arguments
-    static const uint16_t MAX_BLOCK_SIZE    = 4096;
-    static const uint16_t MIN_BLOCK_SIZE    = 64;
-
     int ret = 0;
     do
     {
@@ -111,7 +109,7 @@ static int randBlockCopy(const char* inputFile, const char* outputFile)
         {
             RAQBlock block = RAQ_popRandom(&raqHandle);
 
-            printf("Reading %d bytes from address %d...\n", (int)block.length, (int)block.address);
+            printf("Copying %d bytes to address %d...\n", (int)block.length, (int)block.address);
 
             uint8_t buffer[block.length];
             // TODO: Check return codes

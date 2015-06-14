@@ -25,6 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <unistd.h>
 #include <IoBlock.h>
 
 IoBlockReturn IoBlock_open(IoBlockHandle* handle, const char* filename, bool cacheable, bool readOnly)
@@ -119,6 +120,9 @@ IoBlockReturn IoBlock_write(IoBlockHandle* handle, size_t address, const void* b
 
         if(length != fwrite(buffer, 1, length, handle->_file))
             break;
+
+        fflush(handle->_file);
+        (void) fsync(fileno(handle->_file));
 
         ret = IO_SUCCESS;
     } while(0);
