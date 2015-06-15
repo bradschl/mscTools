@@ -5,12 +5,14 @@
 #include <Entropy.h>
 #include <IoBlock.h>
 #include <RAQ.h>
+#include <Version.h>
 
 typedef enum
 {
     UNKNOWN,
     RAND_BLOCK_COPY,
-    SIZE_INFO
+    SIZE_INFO,
+    VERSION_INFO
 } Command;
 
 // TODO: Make these arguments
@@ -78,6 +80,12 @@ static int getSizeInfo(const char* inputFile)
     return 0;
 }
 
+static int versionInfo(void)
+{
+    printf("Git commit: %s\n", getVersionString());
+    return 0;
+}
+
 int main(int argc, char** argv)
 {
     argc--;
@@ -98,6 +106,10 @@ int main(int argc, char** argv)
     {
         cmd = SIZE_INFO;
     }
+    else if(0 == strcmp("version", *argv))
+    {
+        cmd = VERSION_INFO;
+    }
     argc--;
     argv++;
 
@@ -108,6 +120,10 @@ int main(int argc, char** argv)
     else if((SIZE_INFO == cmd) && (1 == argc))
     {
         return getSizeInfo(argv[0]);
+    }
+    else if((VERSION_INFO == cmd) && (0 == argc))
+    {
+        return versionInfo();
     }
     else
     {

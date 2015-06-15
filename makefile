@@ -17,13 +17,19 @@ CF_ALL 			:= -Wall -O0 -g3 -Iinc $(shell pkg-config --cflags glib-2.0)
 LF_ALL 			:= 
 LL_ALL			:= $(shell pkg-config --libs glib-2.0)
 
+# Misc
+GIT_ID = $(shell git rev-parse HEAD)
+
+# Local commands
+$(OBJ_DIR)/%/Version.o: CF_TGT = -DVERSION_STRING='"$(GIT_ID)"'
+
 $(TARGET_BIN): $(COBJS)
 	$(MAKEDIR)
 	$(CC) $(LF_ALL) $^ $(LL_ALL) -o $@
 
 $(OBJ_DIR)/%.o: %.c
 	@$(MAKEDIR)
-	$(CC) $(CF_ALL) -c $< -o $@
+	$(CC) $(CF_ALL) $(CF_TGT) -c $< -o $@
 
 
 .PHONY: clean
