@@ -25,8 +25,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <unistd.h>
 #include <IoBlock.h>
+
+#include <fcntl.h>
+#include <linux/fs.h>
+#include <stdio.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#define INVALID_FD (-1)
 
 IoBlockReturn IoBlock_open(IoBlockHandle* handle, const char* filename, bool cacheable, bool readOnly)
 {
@@ -36,33 +45,35 @@ IoBlockReturn IoBlock_open(IoBlockHandle* handle, const char* filename, bool cac
     }
 
     handle->_isReadOnly = readOnly;
-    handle->_file       = NULL;
+    handle->_fd         = INVALID_FD;
     handle->_errorState = IO_ERROR;
 
     do
     {
-        const char* args = NULL;
+        int args = 0;
         if(readOnly)
         {
-            args = "rb";
+            args = O_RDONLY;
         }
         else
         {
-            args = "wb";
+            args = O_CREAT | O_RDWR;
         }
 
-        handle->_file = fopen(filename, args);
-        if(NULL == handle->_file)
+        if(!cacheable)
         {
+            // __O_DIRECT ?
+            args |= O_SYNC;
+        }
+
+        handle->_fd = open(filename, args);
+        if(INVALID_FD == handle->_fd)
+        {
+            perror("Open: ");
             break;
         }
 
         handle->_errorState = IO_SUCCESS;
-
-        if(!cacheable)
-        {
-            setbuf(handle->_file, NULL);
-        }
     } while(0);
 
     return handle->_errorState;
@@ -72,8 +83,8 @@ void IoBlock_close(IoBlockHandle* handle)
 {
     if((NULL != handle) && (IO_ERROR != handle->_errorState))
     {
-        fclose(handle->_file);
-        handle->_file = NULL;
+        close(handle->_fd);
+        handle->_fd = INVALID_FD;
     }
 }
 
@@ -83,17 +94,23 @@ IoBlockReturn IoBlock_read(IoBlockHandle* handle, size_t address, void* buffer, 
     IoBlockReturn ret = IO_ERROR;
     do
     {
-        if((NULL == buffer) | (NULL == handle))
+        if((NULL == buffer) || (NULL == handle))
             break;
 
         if(IO_ERROR == handle->_errorState)
             break;
 
-        if(0 != fseek(handle->_file, address, SEEK_SET))
+        if(address != lseek(handle->_fd, address, SEEK_SET))
+        {
+            perror("Seek: ");
             break;
+        }
 
-        if(length != fread(buffer, 1, length, handle->_file))
+        if(length != read(handle->_fd, buffer, length))
+        {
+            perror("Read: ");
             break;
+        }
 
         ret = IO_SUCCESS;
     } while(0);
@@ -115,14 +132,23 @@ IoBlockReturn IoBlock_write(IoBlockHandle* handle, size_t address, const void* b
         if(IO_ERROR == handle->_errorState)
             break;
 
-        if(0 != fseek(handle->_file, address, SEEK_SET))
+        if(address != lseek(handle->_fd, address, SEEK_SET))
+        {
+            perror("Seek: ");
             break;
+        }
 
-        if(length != fwrite(buffer, 1, length, handle->_file))
+        if(length != write(handle->_fd, buffer, length))
+        {
+            perror("Write: ");
             break;
+        }
 
-        fflush(handle->_file);
-        (void) fsync(fileno(handle->_file));
+        if(0 != fsync(handle->_fd))
+        {
+            perror("Sync: ");
+            break;
+        }
 
         ret = IO_SUCCESS;
     } while(0);
@@ -133,18 +159,30 @@ IoBlockReturn IoBlock_write(IoBlockHandle* handle, size_t address, const void* b
 size_t IoBlock_size(IoBlockHandle* handle)
 {
     size_t sz = 0;
+
     do
     {
         if(NULL == handle)
             break;
 
-        if(IO_ERROR == handle->_errorState)
+        struct stat fd_stats;
+        if(0 != fstat(handle->_fd, &fd_stats))
+        {
+            perror("Stat: ");
             break;
+        }
 
-        if(0 != fseek(handle->_file, 0, SEEK_END))
+        if(S_ISBLK(fd_stats.st_mode))
+        {
+            ioctl(handle->_fd, BLKGETSIZE64, &sz);
             break;
+        }
+        else if(S_ISREG(fd_stats.st_mode))
+        {
+            sz = lseek(handle->_fd, 0, SEEK_END);
+            break;
+        }
 
-        sz = ftell(handle->_file);
     } while(0);
 
     return sz;

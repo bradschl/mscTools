@@ -40,7 +40,7 @@ typedef enum
 typedef struct
 {
     bool            _isReadOnly;
-    FILE*           _file;
+    int             _fd;
     IoBlockReturn   _errorState;
 } IoBlockHandle;
 

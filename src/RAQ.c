@@ -43,7 +43,7 @@ RAQHandle RAQ_init(size_t totalSize, uint16_t minAccess, uint16_t maxAccess)
         RAQBlock* raq = (RAQBlock*) malloc(sizeof(RAQBlock));
 
         raq->address = address;
-        if((bytesLeft >= minAccess) && (bytesLeft <= maxAccess))
+        if(bytesLeft < minAccess)
         {
             raq->length = bytesLeft;
         }
