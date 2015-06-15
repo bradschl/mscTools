@@ -29,10 +29,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <Entropy.h>
-#include <IoBlock.h>
-#include <RAQ.h>
-#include <Version.h>
+#include <mscTools/IoBlock.h>
+#include <mscTools/RAQ.h>
+#include <mscTools/Version.h>
 
 typedef enum
 {

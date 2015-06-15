@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <IoBlock.h>
+#include <mscTools/IoBlock.h>
 
 #include <fcntl.h>
 #include <linux/fs.h>

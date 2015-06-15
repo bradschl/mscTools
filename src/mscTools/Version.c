@@ -25,34 +25,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ENTROPY_H_
-#define ENTROPY_H_
+#include <mscTools/Version.h>
 
-#include <stdio.h>
-#include <stdbool.h>
+#ifndef VERSION_STRING
+#define VERSION_STRING "UNKNOWN"
+#endif
 
-typedef struct
+static const char* VersionString = VERSION_STRING;
+
+const char* getVersionString(void)
 {
-    FILE*   _inputHandle;
-} EntropyHandle;
-
-
-/**
- * @brief Initializes and gets a handle for calls to the Entropy_* functions
- *
- * @param handle Struct to initialize
- * @return true on success, else false
- */
-bool Entropy_init(EntropyHandle* handle);
-void Entropy_deinit(EntropyHandle* handle);
-
-/**
- * @brief Gets a block of entropy
- * 
- * @param handle Handle
- * @param buffer Buffer to read into
- * @param length Number of entropy bytes to read into the buffer
- */
-void Entropy_get(EntropyHandle* handle, void* buffer, size_t length);
-
-#endif /* ENTROPY_H_ */
+    return VersionString;
+}

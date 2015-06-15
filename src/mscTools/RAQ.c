@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <RAQ.h>
+#include <mscTools/RAQ.h>
 #include <stdlib.h>
 
 RAQHandle RAQ_init(size_t totalSize, uint16_t minAccess, uint16_t maxAccess)
