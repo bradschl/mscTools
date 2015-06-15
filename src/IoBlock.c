@@ -36,6 +36,8 @@
 #include <unistd.h>
 
 #define INVALID_FD (-1)
+#define PERMISSIONS (S_IREAD | S_IWRITE | S_IRUSR | S_IWUSR | S_IRGRP)
+
 
 IoBlockReturn IoBlock_open(IoBlockHandle* handle, const char* filename, bool cacheable, bool readOnly)
 {
@@ -66,7 +68,7 @@ IoBlockReturn IoBlock_open(IoBlockHandle* handle, const char* filename, bool cac
             args |= O_SYNC;
         }
 
-        handle->_fd = open(filename, args);
+        handle->_fd = open(filename, args, PERMISSIONS);
         if(INVALID_FD == handle->_fd)
         {
             perror("Open: ");

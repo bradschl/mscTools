@@ -20,6 +20,7 @@ static const uint16_t MIN_BLOCK_SIZE    = 64;
 
 static int randBlockCopy(const char* inputFile, const char* outputFile)
 {
+    printf("Random block copy mode.\n");
     int ret = 0;
     do
     {
