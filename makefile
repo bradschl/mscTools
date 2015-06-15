@@ -7,7 +7,7 @@ OBJ_DIR 		:= $(BUILD_DIR)/obj
 BIN_DIR 		:= $(BUILD_DIR)/bin
 
 # Targets
-TARGET_BIN 		:= $(BIN_DIR)/mscTester
+TARGET_BIN 		:= $(BIN_DIR)/mscTools
 
 CSOURCES 		:= $(shell find ./src/ -name '*.c')
 COBJS 			:= $(addprefix $(OBJ_DIR)/,$(CSOURCES:%.c=%.o))
