@@ -13,9 +13,12 @@ CSOURCES 		:= $(shell find ./src/ -name '*.c')
 COBJS 			:= $(addprefix $(OBJ_DIR)/,$(CSOURCES:%.c=%.o))
 
 # Compiler flags
-CF_ALL 			:= -Wall -O0 -g3 -Iinc $(shell pkg-config --cflags glib-2.0)
+CF_ALL 			:=  -Wall -O0 -g3 -Iinc \
+					$(shell pkg-config --cflags glib-2.0) \
+					$(shell pkg-config --cflags popt)
 LF_ALL 			:= 
-LL_ALL			:= $(shell pkg-config --libs glib-2.0)
+LL_ALL			:=  $(shell pkg-config --libs glib-2.0) \
+					$(shell pkg-config --libs popt)
 
 # Misc
 GIT_ID = $(shell git rev-parse HEAD)

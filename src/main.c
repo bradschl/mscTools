@@ -28,22 +28,57 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <popt.h>
 
 #include <mscTools/IoBlock.h>
 #include <mscTools/RAQ.h>
 #include <mscTools/Version.h>
 
+
 typedef enum
 {
-    UNKNOWN,
-    RAND_BLOCK_COPY,
-    SIZE_INFO,
-    VERSION_INFO
-} Command;
+    PARAM_NONE = 0,
+    PARAM_VERSION = 1
+} CommandParams_E;
 
+
+// RBC Mode options
+static int rbcByteLimit = 0;
 // TODO: Make these arguments
 static const uint16_t MAX_BLOCK_SIZE    = 4096;
 static const uint16_t MIN_BLOCK_SIZE    = 64;
+
+
+
+// Command tables
+static struct poptOption rbcOptions[] =
+{
+    { "limit", 'L', POPT_ARG_INT, &rbcByteLimit, PARAM_NONE,
+    "- copy byte limit, default is the input file size.", " byte limit" },
+
+    POPT_TABLEEND
+};
+
+static struct poptOption sizeOptions[] =
+{
+    POPT_TABLEEND
+};
+
+static struct poptOption optionTable[] =
+{
+    {NULL, (char)-1, POPT_ARG_INCLUDE_TABLE, rbcOptions, 0,
+    "Random Block Copy Mode: rbc <input file> <output file> [OPTIONS...]", NULL},
+
+    {NULL, (char)-1, POPT_ARG_INCLUDE_TABLE, sizeOptions, 0,
+    "Get Input Size Mode: size <input file>", NULL},
+
+    {"version", 'v', POPT_ARG_NONE, NULL, PARAM_VERSION, "Version", NULL},
+
+    POPT_AUTOHELP
+    POPT_TABLEEND
+};
+
 
 
 static int randBlockCopy(const char* inputFile, const char* outputFile)
@@ -68,7 +103,12 @@ static int randBlockCopy(const char* inputFile, const char* outputFile)
             break;
         }
 
-        RAQHandle raqHandle = RAQ_init(IoBlock_size(&input), MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
+        if(rbcByteLimit <= 0)
+        {
+            rbcByteLimit = IoBlock_size(&input);
+        }
+
+        RAQHandle raqHandle = RAQ_init(rbcByteLimit, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
 
         while(!RAQ_isEmpty(&raqHandle))
         {
@@ -108,53 +148,101 @@ static int getSizeInfo(const char* inputFile)
 
 static int versionInfo(void)
 {
-    printf("Git commit: %s\n", getVersionString());
+    printf("mscTools version: %s\n", getVersionString());
     return 0;
 }
 
-int main(int argc, char** argv)
+int main(int argc, const char** argv)
 {
-    argc--;
-    argv++;
+    int ret = 0;
 
-    if(argc < 1)
+
+    poptContext con = poptGetContext(NULL, argc, argv, optionTable, 0);
+    poptSetOtherOptionHelp(con, "<COMMAND> [OPTIONS...]");
+
+    char c;
+    while((c = poptGetNextOpt(con)) >= 0)
     {
-        fprintf(stderr, "Missing command.\n");
-        return -1;
+        char * arg = poptGetOptArg(con);
+
+        switch(c)
+        {
+            case PARAM_VERSION:
+            {
+                // TODO: Don't return here
+                return versionInfo();
+            }
+
+            case PARAM_NONE:
+            default:
+                break;
+        }
+
+        if(c < 0)
+        {
+            fprintf(stderr, "Parse error: %s %s\n",
+                poptBadOption(con, POPT_BADOPTION_NOALIAS),
+                poptStrerror(c));
+
+            // TODO: Don't return here
+            return -1;
+        }
+
+        if(arg)
+        {
+            free(arg);
+        }
     }
 
-    Command cmd = UNKNOWN;
-    if(0 == strcmp("rbc", *argv))
-    {
-        cmd = RAND_BLOCK_COPY;
-    }
-    else if(0 == strcmp("size", *argv))
-    {
-        cmd = SIZE_INFO;
-    }
-    else if(0 == strcmp("version", *argv))
-    {
-        cmd = VERSION_INFO;
-    }
-    argc--;
-    argv++;
+    bool parseFail = false;
 
-    if((RAND_BLOCK_COPY == cmd) && (2 == argc))
+    const char ** av = poptGetArgs(con);
+    if(NULL == av)
     {
-        return randBlockCopy(argv[0], argv[1]);
+        parseFail = true;
     }
-    else if((SIZE_INFO == cmd) && (1 == argc))
+    else if(0 == strcmp("rbc", *av))
     {
-        return getSizeInfo(argv[0]);
+        ++av;
+        const char* inputFile   = *av;  ++av;
+        const char* outputFile  = *av;  ++av;
+
+        if(    (NULL == inputFile)
+            || (NULL == outputFile)
+            || (rbcByteLimit < 0))
+        {
+            parseFail = true;
+        }
+        else
+        {
+            ret = randBlockCopy(inputFile, outputFile);
+        }
     }
-    else if((VERSION_INFO == cmd) && (0 == argc))
+    else if(0 == strcmp("size", *av))
     {
-        return versionInfo();
+        ++av;
+        const char* inputFile   = *av;  ++av;
+        if(NULL == inputFile)
+        {
+            parseFail = true;
+        }
+        else
+        {
+            ret = getSizeInfo(inputFile);
+        }
     }
     else
     {
-        fprintf(stderr, "Invalid parameters.\n");
-        return -1;
+        parseFail = true;
     }
+
+    if(parseFail)
+    {
+        poptPrintUsage(con, stderr, 0);
+        ret = -1;
+    }
+
+    con = poptFreeContext(con);
+    return ret;
 }
 
