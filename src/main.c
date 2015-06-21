@@ -44,12 +44,13 @@ typedef enum
 
 
 // RBC Mode options
-static int rbcByteLimit = 0;
+static      int         rbcByteLimit = 0;
 // TODO: Make these arguments
-static const uint16_t MAX_BLOCK_SIZE    = 4096;
-static const uint16_t MIN_BLOCK_SIZE    = 64;
+static      int         rbcMaxBlockSize     = 4096;
+static      int         rbcMinBLockSize     = 64;
 
-
+// Erase Mode options
+static      int         eraseBlockSize      = 4096;
 
 // Command tables
 static struct poptOption rbcOptions[] =
@@ -65,6 +66,16 @@ static struct poptOption sizeOptions[] =
     POPT_TABLEEND
 };
 
+
+static struct poptOption eraseOptions[] =
+{
+    { "erase-bs", 0, POPT_ARG_INT | POPT_ARGFLAG_SHOW_DEFAULT, &eraseBlockSize, PARAM_NONE,
+    "- erase block size", "bytes"},
+
+    POPT_TABLEEND
+};
+
+
 static struct poptOption optionTable[] =
 {
     {NULL, (char)-1, POPT_ARG_INCLUDE_TABLE, rbcOptions, 0,
@@ -72,6 +83,12 @@ static struct poptOption optionTable[] =
 
     {NULL, (char)-1, POPT_ARG_INCLUDE_TABLE, sizeOptions, 0,
     "Get Input Size Mode: size <input file>", NULL},
+
+    {NULL, (char)-1, POPT_ARG_INCLUDE_TABLE, eraseOptions, 0,
+    "Erase Mode: erase <input file>", NULL},
+
+    // TODO: Add max block size
+    // TODO: Add min block size
 
     {"version", 'v', POPT_ARG_NONE, NULL, PARAM_VERSION, "Version", NULL},
 
@@ -108,7 +125,7 @@ static int randBlockCopy(const char* inputFile, const char* outputFile)
             rbcByteLimit = IoBlock_size(&input);
         }
 
-        RAQHandle raqHandle = RAQ_init(rbcByteLimit, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
+        RAQHandle raqHandle = RAQ_init(rbcByteLimit, rbcMinBLockSize, rbcMaxBlockSize);
 
         while(!RAQ_isEmpty(&raqHandle))
         {
@@ -149,6 +166,39 @@ static int getSizeInfo(const char* inputFile)
 static int versionInfo(void)
 {
     printf("mscTools version: %s\n", getVersionString());
+    return 0;
+}
+
+static int eraseTarget(const char* outputFIle)
+{
+    IoBlockHandle output;
+    if(IO_SUCCESS != IoBlock_open(&output, outputFIle, true, false))
+    {
+        fprintf(stderr, "Could not open '%s' for writing.\n", outputFIle);
+        return -1;
+    }
+
+    uint8_t eraseBlock[eraseBlockSize];
+    memset(eraseBlock, 0xFF, sizeof(eraseBlock));
+
+    size_t bytesToErase = IoBlock_size(&output);
+    size_t address = 0;
+    while(address < bytesToErase)
+    {
+        size_t writeSize = bytesToErase - address;
+        if(writeSize > sizeof(eraseBlock))
+        {
+            writeSize = sizeof(eraseBlock);
+        }
+
+        printf("Writing %ld bytes to %ld...\n", writeSize, address);
+        // TODO: Check return codes
+        IoBlock_write(&output, address, eraseBlock, writeSize);
+
+        address += writeSize;
+    }
+
+    IoBlock_close(&output);
     return 0;
 }
 
@@ -229,6 +279,20 @@ int main(int argc, const char** argv)
         else
         {
             ret = getSizeInfo(inputFile);
+        }
+    }
+    else if(0 == strcmp("erase", *av))
+    {
+        ++av;
+        const char* outputFile  = *av;  ++av;
+        if(    (NULL == outputFile)
+            || (eraseBlockSize < 1))
+        {
+            parseFail = true;
+        }
+        else
+        {
+            ret = eraseTarget(outputFile);
         }
     }
     else
